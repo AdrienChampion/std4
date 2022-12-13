@@ -15,14 +15,44 @@ theorem succ_ne_self : ∀ n : Nat, succ n ≠ n
 | 0,   h => absurd h (succ_ne_zero 0)
 | n+1, h => succ_ne_self n (Nat.noConfusion h id)
 
-protected theorem eq_zero_of_add_eq_zero_right : ∀ {n m : Nat}, n + m = 0 → n = 0
-| 0,   m => by simp [Nat.zero_add]
-| n+1, m => fun h => by
-  rw [add_one, succ_add] at h
-  cases succ_ne_zero _ h
+protected theorem sum_eq_zero_iff_eq_zero_both :
+  ∀ {n m : Nat}, n + m = 0 ↔ (n = 0 ∧ m = 0)
+| 0, 0 => by
+  apply Iff.intro
+  <;> trivial
+| n+1, m => by
+  apply Iff.intro
+    <;> rw [add_one, succ_add]
+  · let _ := Nat.succ_ne_zero (n + m)
+    intro
+    contradiction
+  · let _ := Nat.succ_ne_zero n
+    intro h' ; cases h'
+    contradiction
+| n, m+1 => by
+  rw [Nat.add_comm]
+  apply Iff.intro
+    <;> rw [add_one, succ_add]
+  · let _ := Nat.succ_ne_zero (n + m)
+    intro
+    contradiction
+  · let _ := Nat.succ_ne_zero n
+    intro h' ; cases h'
+    contradiction
 
-protected theorem eq_zero_of_add_eq_zero_left {n m : Nat} (h : n + m = 0) : m = 0 :=
-  @Nat.eq_zero_of_add_eq_zero_right m n (Nat.add_comm n m ▸ h)
+protected theorem eq_zero_of_add_eq_zero_right :
+  ∀ {n m : Nat}, n + m = 0 → n = 0
+:= fun sum_eq =>
+  Nat.sum_eq_zero_iff_eq_zero_both
+  |>.mp sum_eq
+  |>.left
+
+protected theorem eq_zero_of_add_eq_zero_left :
+  ∀ {n m : Nat}, n + m = 0 → m = 0
+:= fun sum_eq =>
+  Nat.sum_eq_zero_iff_eq_zero_both
+  |>.mp sum_eq
+  |>.right
 
 attribute [simp] Nat.pred_zero Nat.pred_succ
 
