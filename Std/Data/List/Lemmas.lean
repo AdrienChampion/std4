@@ -28,8 +28,22 @@ theorem tail_eq_of_cons_eq (H : h₁ :: t₁ = h₂ :: t₂) : t₁ = t₂ := (c
 theorem cons_inj (a : α) {l l' : List α} : a :: l = a :: l' ↔ l = l' :=
   ⟨tail_eq_of_cons_eq, congrArg _⟩
 
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.cons_eq_cons`
+theorem cons_inj2 {a b : α} {l l' : List α} : a :: l = b :: l' ↔ a = b ∧ l = l' :=
+  ⟨List.cons.inj, fun h => h.1 ▸ h.2 ▸ rfl⟩
+
 theorem exists_cons_of_ne_nil : ∀ {l : List α}, l ≠ [] → ∃ b L, l = b :: L
   | c :: l', _ => ⟨c, l', rfl⟩
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.cons_eq_cons`
+theorem split_of_mem {a : α} {l : List α} (h_mem : a ∈ l) : ∃ s t : List α, l = s ++ a :: t :=
+  let hd::tl := l
+  match h_mem with
+  | .head _ => ⟨[], tl, rfl⟩
+  | .tail hd h_mem_tail =>
+    let ⟨s, t, proof⟩ :=
+      split_of_mem h_mem_tail
+    ⟨hd::s, t, by rw [List.cons_append, proof]⟩
 
 /-! ### length -/
 
@@ -40,6 +54,11 @@ theorem length_pos_of_mem {a : α} : ∀ {l : List α}, a ∈ l → 0 < length l
 
 theorem exists_mem_of_length_pos : ∀ {l : List α}, 0 < length l → ∃ a, a ∈ l
   | _::_, _ => ⟨_, .head ..⟩
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.exists_of_length_succ`
+theorem exists_cons_of_length_pos :
+    ∀ {l : List α}, l.length = n + 1 → ∃ h t, l = h :: t
+  | h::t, _ => ⟨h, t, rfl⟩
 
 theorem length_pos_iff_exists_mem {l : List α} : 0 < length l ↔ ∃ a, a ∈ l :=
   ⟨exists_mem_of_length_pos, fun ⟨_, h⟩ => length_pos_of_mem h⟩
@@ -52,6 +71,14 @@ theorem exists_mem_of_ne_nil (l : List α) (h : l ≠ []) : ∃ x, x ∈ l :=
 
 theorem length_eq_one {l : List α} : length l = 1 ↔ ∃ a, l = [a] :=
   ⟨fun h => match l, h with | [_], _ => ⟨_, rfl⟩, fun ⟨_, h⟩ => by simp [h]⟩
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.length_eq_two`
+theorem length_eq_two {l : List α} : l.length = 2 ↔ ∃ a b, l = [a, b] :=
+  ⟨fun _ => let [a, b] := l; ⟨a, b, rfl⟩, fun ⟨_, _, e⟩ => e ▸ rfl⟩
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.length_eq_three`
+theorem length_eq_three {l : List α} : l.length = 3 ↔ ∃ a b c, l = [a, b, c] :=
+  ⟨fun _ => let [a, b, c] := l; ⟨a, b, c, rfl⟩, fun ⟨_, _, _, e⟩ => e ▸ rfl⟩
 
 /-! ### mem -/
 
@@ -203,6 +230,12 @@ theorem bind_map (f : β → γ) (g : α → List β) :
     ∀ l : List α, map f (l.bind g) = l.bind fun a => (g a).map f
   | [] => rfl
   | a::l => by simp only [cons_bind, map_append, bind_map _ _ l]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.basic.map_bind`
+theorem map_bind (g : β → List γ) (f : α → β) :
+    ∀ l : List α, (List.map f l).bind g = l.bind fun a => g (f a)
+  | [] => rfl
+  | a :: l => by simp only [cons_bind, map_cons, map_bind _ _ l]
 
 /-! ### set-theoretic notation of Lists -/
 
