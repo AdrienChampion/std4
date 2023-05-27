@@ -176,6 +176,14 @@ theorem mem_append_left {a : α} {l₁ : List α} (l₂ : List α) (h : a ∈ l�
 theorem mem_append_right {a : α} (l₁ : List α) {l₂ : List α} (h : a ∈ l₂) : a ∈ l₁ ++ l₂ :=
   mem_append.2 (Or.inr h)
 
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.append_left_cancel`
+theorem append_left_cancel {s t₁ t₂ : List α} (h : s ++ t₁ = s ++ t₂) : t₁ = t₂ :=
+  (append_right_inj _).1 h
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.append_right_cancel`
+theorem append_right_cancel {s₁ s₂ t : List α} (h : s₁ ++ t = s₂ ++ t) : s₁ = s₂ :=
+  (append_left_inj _).1 h
+
 /-! ### map -/
 
 theorem map_singleton (f : α → β) (a : α) : map f [a] = [f a] := rfl
@@ -256,6 +264,35 @@ theorem forall_mem_singleton {p : α → Prop} {a : α} : (∀ x ∈ [a], p x) �
 theorem forall_mem_append {p : α → Prop} {l₁ l₂ : List α} :
     (∀ x ∈ l₁ ++ l₂, p x) ↔ (∀ x ∈ l₁, p x) ∧ (∀ x ∈ l₂, p x) := by
   simp only [mem_append, or_imp, forall_and]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.forall_mem_of_forall_mem_cons`
+theorem forall_mem_of_forall_mem_cons {p : α → Prop} {a : α} {l : List α} :
+    (∀ x ∈ a :: l, p x) → ∀ x ∈ l, p x :=
+  fun h => (forall_mem_cons.1 h).2
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.exists_mem_cons_of`
+theorem exists_mem_cons_of {p : α → Prop} {a : α} (l : List α) (h : p a) :
+    ∃ x ∈ a :: l, p x :=
+  ⟨a, mem_cons_self _ _, h⟩
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.exists_mem_cons_of_exists`
+theorem exists_mem_cons_of_exists {p : α → Prop} {a : α} {l : List α} :
+    (∃ x ∈ l, p x) → ∃ x ∈ a :: l, p x :=
+  fun ⟨x, xl, px⟩ => ⟨x, mem_cons_of_mem _ xl, px⟩
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.or_exists_of_exists_mem_cons`
+theorem or_exists_of_exists_mem_cons {p : α → Prop} {a : α} {l : List α} :
+    (∃ x ∈ a :: l, p x) → p a ∨ ∃ x ∈ l, p x :=
+  fun ⟨x, xal, px⟩ =>
+    Or.elim (mem_cons.mp xal)
+      (fun h : x = a => by rw [← h]; apply Or.inl px)
+      fun h : x ∈ l => Or.inr ⟨x, h, px⟩
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.exists_mem_cons_iff`
+theorem exists_mem_cons_iff (p : α → Prop) (a : α) (l : List α) :
+    (∃ x ∈ a :: l, p x) ↔ p a ∨ ∃ x ∈ l, p x :=
+  Iff.intro or_exists_of_exists_mem_cons fun h =>
+    Or.elim h (exists_mem_cons_of l) exists_mem_cons_of_exists
 
 /-! ### List subset -/
 
