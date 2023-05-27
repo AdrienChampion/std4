@@ -29,7 +29,7 @@ theorem cons_inj (a : α) {l l' : List α} : a :: l = a :: l' ↔ l = l' :=
   ⟨tail_eq_of_cons_eq, congrArg _⟩
 
 -- MATHLIB MIGRATION `Mathlib.Data.List.Basic.cons_eq_cons`
-theorem cons_inj2 {a b : α} {l l' : List α} : a :: l = b :: l' ↔ a = b ∧ l = l' :=
+theorem cons_eq_cons {a b : α} {l l' : List α} : a :: l = b :: l' ↔ a = b ∧ l = l' :=
   ⟨List.cons.inj, fun h => h.1 ▸ h.2 ▸ rfl⟩
 
 theorem exists_cons_of_ne_nil : ∀ {l : List α}, l ≠ [] → ∃ b L, l = b :: L
