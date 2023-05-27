@@ -35,16 +35,6 @@ theorem cons_inj2 {a b : α} {l l' : List α} : a :: l = b :: l' ↔ a = b ∧ l
 theorem exists_cons_of_ne_nil : ∀ {l : List α}, l ≠ [] → ∃ b L, l = b :: L
   | c :: l', _ => ⟨c, l', rfl⟩
 
--- MATHLIB MIGRATION `Mathlib.Data.List.Basic.cons_eq_cons`
-theorem split_of_mem {a : α} {l : List α} (h_mem : a ∈ l) : ∃ s t : List α, l = s ++ a :: t :=
-  let hd::tl := l
-  match h_mem with
-  | .head _ => ⟨[], tl, rfl⟩
-  | .tail hd h_mem_tail =>
-    let ⟨s, t, proof⟩ :=
-      split_of_mem h_mem_tail
-    ⟨hd::s, t, by rw [List.cons_append, proof]⟩
-
 /-! ### length -/
 
 @[simp 1100] theorem length_singleton (a : α) : length [a] = 1 := rfl
@@ -55,13 +45,23 @@ theorem length_pos_of_mem {a : α} : ∀ {l : List α}, a ∈ l → 0 < length l
 theorem exists_mem_of_length_pos : ∀ {l : List α}, 0 < length l → ∃ a, a ∈ l
   | _::_, _ => ⟨_, .head ..⟩
 
--- MATHLIB MIGRATION `Mathlib.Data.List.Basic.exists_of_length_succ`
-theorem exists_cons_of_length_pos :
-    ∀ {l : List α}, l.length = n + 1 → ∃ h t, l = h :: t
-  | h::t, _ => ⟨h, t, rfl⟩
-
 theorem length_pos_iff_exists_mem {l : List α} : 0 < length l ↔ ∃ a, a ∈ l :=
   ⟨exists_mem_of_length_pos, fun ⟨_, h⟩ => length_pos_of_mem h⟩
+
+-- MATHLIB MIGRATION original lemma based on `Mathlib.Data.List.Basic.exists_of_length_succ`
+theorem exists_cons_of_length_pos :
+    ∀ {l : List α}, 0 < l.length → ∃ h t, l = h :: t
+  | h::t, _ => ⟨h, t, rfl⟩
+
+-- MATHLIB MIGRATION original lemma based on `Mathlib.Data.List.Basic.exists_of_length_succ`
+theorem length_pos_iff_exists_cons :
+    ∀ {l : List α}, 0 < l.length ↔ ∃ h t, l = h :: t :=
+  ⟨exists_cons_of_length_pos, fun ⟨_, _, eq⟩ => eq ▸ Nat.succ_pos _⟩
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.exists_of_length_succ`
+theorem exists_cons_of_length_succ :
+    ∀ {l : List α}, l.length = n + 1 → ∃ h t, l = h :: t
+  | h::t, _ => ⟨h, t, rfl⟩
 
 theorem length_pos {l : List α} : 0 < length l ↔ l ≠ [] :=
   Nat.pos_iff_ne_zero.trans (not_congr length_eq_zero)
