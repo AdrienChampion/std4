@@ -176,13 +176,36 @@ theorem mem_append_left {a : α} {l₁ : List α} (l₂ : List α) (h : a ∈ l�
 theorem mem_append_right {a : α} (l₁ : List α) {l₂ : List α} (h : a ∈ l₂) : a ∈ l₁ ++ l₂ :=
   mem_append.2 (Or.inr h)
 
--- MATHLIB MIGRATION `Mathlib.Data.List.Basic.append_left_cancel`
-theorem append_left_cancel {s t₁ t₂ : List α} (h : s ++ t₁ = s ++ t₂) : t₁ = t₂ :=
-  (append_right_inj _).1 h
+/-! ### concat -/
 
--- MATHLIB MIGRATION `Mathlib.Data.List.Basic.append_right_cancel`
-theorem append_right_cancel {s₁ s₂ t : List α} (h : s₁ ++ t = s₂ ++ t) : s₁ = s₂ :=
-  (append_left_inj _).1 h
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.concat_nil`
+theorem concat_nil (a : α) : concat [] a = [a] :=
+  rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.concat_cons`
+theorem concat_cons (a b : α) (l : List α) : concat (a :: l) b = a :: concat l b :=
+  rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.init_eq_of_concat_eq`
+theorem init_eq_of_concat_eq {a : α} {l₁ l₂ : List α} : concat l₁ a = concat l₂ a → l₁ = l₂ := by
+  intro h
+  rw [concat_eq_append, concat_eq_append] at h
+  apply append_left_inj [a] |>.mp h
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.last_eq_of_concat_eq`
+theorem last_eq_of_concat_eq {a b : α} {l : List α} : concat l a = concat l b → a = b := by
+  intro h
+  rw [concat_eq_append, concat_eq_append] at h
+  exact head_eq_of_cons_eq (append_right_inj l |>.mp h)
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.concat_ne_nil`
+theorem concat_ne_nil (a : α) (l : List α) : concat l a ≠ [] := by simp
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.concat_append`
+theorem concat_append (a : α) (l₁ l₂ : List α) : concat l₁ a ++ l₂ = l₁ ++ a :: l₂ := by simp
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.append_concat`
+theorem append_concat (a : α) (l₁ l₂ : List α) : l₁ ++ concat l₂ a = concat (l₁ ++ l₂) a := by simp
 
 /-! ### map -/
 
@@ -265,35 +288,6 @@ theorem forall_mem_append {p : α → Prop} {l₁ l₂ : List α} :
     (∀ x ∈ l₁ ++ l₂, p x) ↔ (∀ x ∈ l₁, p x) ∧ (∀ x ∈ l₂, p x) := by
   simp only [mem_append, or_imp, forall_and]
 
--- MATHLIB MIGRATION `Mathlib.Data.List.Basic.forall_mem_of_forall_mem_cons`
-theorem forall_mem_of_forall_mem_cons {p : α → Prop} {a : α} {l : List α} :
-    (∀ x ∈ a :: l, p x) → ∀ x ∈ l, p x :=
-  fun h => (forall_mem_cons.1 h).2
-
--- MATHLIB MIGRATION `Mathlib.Data.List.Basic.exists_mem_cons_of`
-theorem exists_mem_cons_of {p : α → Prop} {a : α} (l : List α) (h : p a) :
-    ∃ x ∈ a :: l, p x :=
-  ⟨a, mem_cons_self _ _, h⟩
-
--- MATHLIB MIGRATION `Mathlib.Data.List.Basic.exists_mem_cons_of_exists`
-theorem exists_mem_cons_of_exists {p : α → Prop} {a : α} {l : List α} :
-    (∃ x ∈ l, p x) → ∃ x ∈ a :: l, p x :=
-  fun ⟨x, xl, px⟩ => ⟨x, mem_cons_of_mem _ xl, px⟩
-
--- MATHLIB MIGRATION `Mathlib.Data.List.Basic.or_exists_of_exists_mem_cons`
-theorem or_exists_of_exists_mem_cons {p : α → Prop} {a : α} {l : List α} :
-    (∃ x ∈ a :: l, p x) → p a ∨ ∃ x ∈ l, p x :=
-  fun ⟨x, xal, px⟩ =>
-    Or.elim (mem_cons.mp xal)
-      (fun h : x = a => by rw [← h]; apply Or.inl px)
-      fun h : x ∈ l => Or.inr ⟨x, h, px⟩
-
--- MATHLIB MIGRATION `Mathlib.Data.List.Basic.exists_mem_cons_iff`
-theorem exists_mem_cons_iff (p : α → Prop) (a : α) (l : List α) :
-    (∃ x ∈ a :: l, p x) ↔ p a ∨ ∃ x ∈ l, p x :=
-  Iff.intro or_exists_of_exists_mem_cons fun h =>
-    Or.elim h (exists_mem_cons_of l) exists_mem_cons_of_exists
-
 /-! ### List subset -/
 
 theorem subset_def {l₁ l₂ : List α} : l₁ ⊆ l₂ ↔ ∀ {a : α}, a ∈ l₁ → a ∈ l₂ := .rfl
@@ -345,11 +339,22 @@ theorem map_subset {l₁ l₂ : List α} (f : α → β) (H : l₁ ⊆ l₂) : m
 
 theorem replicate_succ (a : α) (n) : replicate (n+1) a = a :: replicate n a := rfl
 
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.replicate_zero` #lemma
+@[simp] theorem replicate_zero (a : α) : replicate 0 a = [] := by rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.replicate_one` #lemma
+theorem replicate_one (a : α) : replicate 1 a = [a] := rfl
+
 theorem mem_replicate {a b : α} : ∀ {n}, b ∈ replicate n a ↔ n ≠ 0 ∧ b = a
   | 0 => by simp
   | n+1 => by simp [mem_replicate, Nat.succ_ne_zero]
 
 theorem eq_of_mem_replicate {a b : α} {n} (h : b ∈ replicate n a) : b = a := (mem_replicate.1 h).2
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.eq_replicate_length`
+theorem eq_replicate_length {a : α} : ∀ {l : List α}, l = replicate l.length a ↔ ∀ b ∈ l, b = a
+  | [] => by simp
+  | (b :: l) => by simp [eq_replicate_length]
 
 theorem eq_replicate_of_mem {a : α} :
     ∀ {l : List α}, (∀ b ∈ l, b = a) → l = replicate l.length a
@@ -363,7 +368,65 @@ theorem eq_replicate {a : α} {n} {l : List α} :
   ⟨fun h => h ▸ ⟨length_replicate .., fun _ => eq_of_mem_replicate⟩,
    fun ⟨e, al⟩ => e ▸ eq_replicate_of_mem al⟩
 
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.replicate_add`
+theorem replicate_add (m n) (a : α) : replicate (m + n) a = replicate m a ++ replicate n a := by
+  induction m <;> simp [*, succ_add]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.replicate_succ'`
+theorem replicate_succ' (n) (a : α) : replicate (n + 1) a = replicate n a ++ [a] :=
+  replicate_add n 1 a
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.replicate_subset_singleton`
+theorem replicate_subset_singleton (n) (a : α) : replicate n a ⊆ [a] := fun _ h =>
+  mem_singleton.2 (eq_of_mem_replicate h)
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.replicate_singleton_iff`
+theorem subset_singleton_iff {a : α} {L : List α} : L ⊆ [a] ↔ ∃ n, L = replicate n a := by
+  simp only [eq_replicate, subset_def, mem_singleton, exists_eq_left']
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.map_replicate`
+@[simp] theorem map_replicate (f : α → β) (n) (a : α) :
+    map f (replicate n a) = replicate n (f a) := by
+  induction n <;> [rfl; simp only [*, replicate, map]]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.tail_replicate`
+@[simp] theorem tail_replicate (a : α) (n) :
+    tail (replicate n a) = replicate (n - 1) a := by cases n <;> rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.join_replicate_nil`
+@[simp] theorem join_replicate_nil (n : Nat) : join (replicate n []) = @nil α := by
+  induction n <;> [rfl; simp only [*, replicate, join, append_nil]]
+
+/-! ### pure -/
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.bind_singleton`
+-- Porting note: simp can prove this
+-- @[simp]
+theorem bind_singleton (f : α → List β) (x : α) : [x].bind f = f x :=
+  append_nil $ f x
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.bind_singleton'`
+@[simp] theorem bind_singleton' (l : List α) : (l.bind fun x => [x]) = l := by
+  induction l <;> simp [*]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.map_eq_bind`
+theorem map_eq_bind {α β} (f : α → β) (l : List α) : map f l = l.bind fun x => [f x] := by
+  simp only [←map_singleton]
+  rw [← bind_singleton' l, bind_map, bind_singleton']
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.bind_assoc`
+theorem bind_assoc {α β} (l : List α) (f : α → List β) (g : β → List γ) :
+    (l.bind f).bind g = l.bind fun x => (f x).bind g := by induction l <;> simp [*]
+
 /-! ### getLast -/
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast_cons`
+@[simp]
+theorem getLast_cons {a : α} {l : List α} :
+    ∀ h : l ≠ nil, getLast (a :: l) (cons_ne_nil a l) = getLast l h := by
+  induction l <;> intros
+  contradiction
+  rfl
 
 theorem getLast_cons' {a : α} {l : List α} : ∀ (h₁ : a :: l ≠ nil) (h₂ : l ≠ nil),
   getLast (a :: l) h₁ = getLast l h₂ := by
@@ -371,7 +434,7 @@ theorem getLast_cons' {a : α} {l : List α} : ∀ (h₁ : a :: l ≠ nil) (h₂
 
 @[simp] theorem getLast_append {a : α} : ∀ (l : List α) h, getLast (l ++ [a]) h = a
   | [], _ => rfl
-  | a::t, h => by
+  | a::t, _h => by
     simp [getLast_cons' _ fun H => cons_ne_nil _ _ (append_eq_nil.1 H).2, getLast_append t]
 
 theorem getLast_concat : (h : concat l a ≠ []) → getLast (concat l a) h = a :=
@@ -382,6 +445,56 @@ theorem eq_nil_or_concat : ∀ l : List α, l = [] ∨ ∃ L b, l = L ++ [b]
   | a::l => match l, eq_nil_or_concat l with
     | _, .inl rfl => .inr ⟨[], a, rfl⟩
     | _, .inr ⟨L, b, rfl⟩ => .inr ⟨a::L, b, rfl⟩
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast_append_singleton`
+theorem getLast_append_singleton {a : α} (l : List α) :
+    getLast (l ++ [a]) (append_ne_nil_of_ne_nil_right l _ (cons_ne_nil a _)) = a := by
+  simp only [getLast_append]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast_append'`
+-- Porting note: name should be fixed upstream
+theorem getLast_append' (l₁ l₂ : List α) (h : l₂ ≠ []) :
+    getLast (l₁ ++ l₂) (append_ne_nil_of_ne_nil_right l₁ l₂ h) = getLast l₂ h := by
+  induction l₁
+  · simp
+  case cons _ _ ih =>
+    simp only [cons_append]
+    rw [List.getLast_cons]
+    exact ih
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast_concat'`
+theorem getLast_concat' {a : α} (l : List α) : getLast (concat l a) (concat_ne_nil a l) = a :=
+  getLast_concat ..
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast_singleton'`
+@[simp]
+theorem getLast_singleton' (a : α) : getLast [a] (cons_ne_nil a []) = a := rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast_cons_cons`
+-- Porting note: simp can prove this
+-- @[simp]
+theorem getLast_cons_cons (a₁ a₂ : α) (l : List α) :
+    getLast (a₁ :: a₂ :: l) (cons_ne_nil _ _) = getLast (a₂ :: l) (cons_ne_nil a₂ l) :=
+  rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast_congr`
+theorem getLast_congr {l₁ l₂ : List α} (h₁ : l₁ ≠ []) (h₂ : l₂ ≠ []) (h₃ : l₁ = l₂) :
+    getLast l₁ h₁ = getLast l₂ h₂ := by subst l₁; rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast_mem`
+theorem getLast_mem : ∀ {l : List α} (h : l ≠ []), getLast l h ∈ l
+  | [], h => absurd rfl h
+  | [a], _ => by simp only [getLast, mem_singleton]
+  | a :: b :: l, h =>
+    List.mem_cons.2 <| Or.inr <| by
+        rw [getLast_cons_cons]
+        exact getLast_mem (cons_ne_nil b l)
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast_replicate_succ`
+theorem getLast_replicate_succ (m : Nat) (a : α) :
+    (replicate (m + 1) a).getLast (ne_nil_of_length_eq_succ (length_replicate _ _)) = a := by
+  simp only [replicate_succ']
+  exact getLast_append_singleton _
 
 /-! ### sublists -/
 
@@ -503,7 +616,47 @@ theorem Sublist.eq_of_length_le (s : l₁ <+ l₂) (h : length l₂ ≤ length l
     | refl => apply Sublist.refl
     | step => simp [*, replicate, Sublist.cons]
 
-/-! ### head -/
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.Sublist.cons_cons`
+theorem Sublist.cons_cons {l₁ l₂ : List α} (a : α) (s : l₁ <+ l₂) : a :: l₁ <+ a :: l₂ :=
+  Sublist.cons₂ _ s
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.sublist_cons_of_sublist`
+theorem sublist_cons_of_sublist (a : α) {l₁ l₂ : List α} : l₁ <+ l₂ → l₁ <+ a :: l₂ :=
+  Sublist.cons _
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.sublist_cons_sublist_cons`
+theorem sublist_of_cons_sublist_cons {l₁ l₂ : List α} : ∀ {a : α}, a :: l₁ <+ a :: l₂ → l₁ <+ l₂
+  | _, Sublist.cons _ s => sublist_of_cons_sublist s
+  | _, Sublist.cons₂ _ s => s
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.sublist_cons_iff`
+theorem cons_sublist_cons_iff {l₁ l₂ : List α} {a : α} : a :: l₁ <+ a :: l₂ ↔ l₁ <+ l₂ :=
+  ⟨sublist_of_cons_sublist_cons, Sublist.cons_cons _⟩
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.eq_nil_of_sublist_nil`
+theorem eq_nil_of_sublist_nil {l : List α} (s : l <+ []) : l = [] :=
+  subset_nil.mp <| s.subset
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.Sublist.antisymm`
+theorem Sublist.antisymm (s₁ : l₁ <+ l₂) (s₂ : l₂ <+ l₁) : l₁ = l₂ :=
+  s₁.eq_of_length_le s₂.length_le
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.decidableSublist`
+instance decidableSublist [DecidableEq α] : ∀ l₁ l₂ : List α, Decidable (l₁ <+ l₂)
+  | [], _ => isTrue <| nil_sublist _
+  | _ :: _, [] => isFalse fun h => List.noConfusion <| eq_nil_of_sublist_nil h
+  | a :: l₁, b :: l₂ =>
+    if h : a = b then
+      @decidable_of_decidable_of_iff _ _ (decidableSublist l₁ l₂) <|
+        h ▸ ⟨Sublist.cons_cons _, sublist_of_cons_sublist_cons⟩
+    else
+      @decidable_of_decidable_of_iff _ _ (decidableSublist (a :: l₁) l₂)
+        ⟨sublist_cons_of_sublist _, fun s =>
+          match a, l₁, s, h with
+          | _, _, Sublist.cons _ s', h => s'
+          | _, _, Sublist.cons₂ t _, h => absurd rfl h⟩
+
+/-! ### head(?!) -/
 
 theorem head!_of_head? [Inhabited α] : ∀ {l : List α}, head? l = some a → head! l = a
   | _a::_l, rfl => rfl
@@ -511,6 +664,65 @@ theorem head!_of_head? [Inhabited α] : ∀ {l : List α}, head? l = some a → 
 theorem head?_eq_head : ∀ l h, @head? α l = some (head l h)
   | [], h => nomatch h rfl
   | _::_, _ => rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.eq_cons_of_mem_head?`
+theorem eq_cons_of_mem_head? {x : α} : ∀ {l : List α}, x ∈ l.head? → l = x :: tail l
+  | [], h => (Option.not_mem_none _ h).elim
+  | a :: l, h => by
+    simp only [head?, Option.mem_def, Option.some_inj] at h
+    exact h ▸ rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.mem_of_mem_head?`
+theorem mem_of_mem_head? {x : α} {l : List α} (h : x ∈ l.head?) : x ∈ l :=
+  (eq_cons_of_mem_head? h).symm ▸ mem_cons_self _ _
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.head!_cons`
+@[simp] theorem head!_cons [Inhabited α] (a : α) (l : List α) : head! (a :: l) = a := rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.head!_append`
+@[simp]
+theorem head!_append [Inhabited α] (t : List α) {s : List α} (h : s ≠ []) :
+    head! (s ++ t) = head! s := by induction s; contradiction; rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.head?_append`
+theorem head?_append {s t : List α} {x : α} (h : x ∈ s.head?) : x ∈ (s ++ t).head? := by
+  cases s; contradiction; exact h
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.head?_append_of_ne_nil`
+theorem head?_append_of_ne_nil :
+    ∀ (l₁ : List α) {l₂ : List α} (_ : l₁ ≠ []), head? (l₁ ++ l₂) = head? l₁
+  | _ :: _, _, _ => rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.cons_head?_tail`
+theorem cons_head?_tail : ∀ {l : List α} {a : α}, a ∈ head? l → a :: tail l = l
+  | [], a, h => by contradiction
+  | b :: l, a, h => by
+    simp at h
+    simp [h]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.head!_mem_head`
+theorem head!_mem_head? [Inhabited α] : ∀ {l : List α}, l ≠ [] → head! l ∈ head? l
+  | [], h => by contradiction
+  | a :: l, _ => rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.cons_head!_tail`
+theorem cons_head!_tail [Inhabited α] {l : List α} (h : l ≠ []) : head! l :: tail l = l :=
+  cons_head?_tail (head!_mem_head? h)
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.head!_mem_self`
+theorem head!_mem_self [Inhabited α] {l : List α} (h : l ≠ nil) : l.head! ∈ l := by
+  have h' := mem_cons_self l.head! l.tail
+  rwa [cons_head!_tail h] at h'
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.head?_map`
+@[simp]
+theorem head?_map (f : α → β) (l) : head? (map f l) = (head? l).map f := by cases l <;> rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.modifyHead_modifyHead`
+-- @[simp]
+@[simp 1100]
+theorem modifyHead_modifyHead (l : List α) (f g : α → α) :
+    (l.modifyHead f).modifyHead g = l.modifyHead (g ∘ f) := by cases l <;> simp
 
 /-! ### tail -/
 
@@ -520,6 +732,17 @@ theorem head?_eq_head : ∀ l h, @head? α l = some (head l h)
 theorem tail_eq_tailD (l) : @tail α l = tailD l [] := by cases l <;> rfl
 
 theorem tail_eq_tail? (l) : @tail α l = (tail? l).getD [] := by simp [tail_eq_tailD]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.tail_append_singleton_of_ne_nil`
+theorem tail_append_singleton_of_ne_nil {a : α} {l : List α} (h : l ≠ nil) :
+    tail (l ++ [a]) = tail l ++ [a] := by
+  induction l; contradiction; rw [tail, cons_append, tail]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.tail_append_of_ne_nil`
+theorem tail_append_of_ne_nil (l l' : List α) (h : l ≠ []) : (l ++ l').tail = l.tail ++ l' := by
+  cases l
+  · contradiction
+  · simp
 
 /-! ### next? -/
 
@@ -550,6 +773,81 @@ theorem getLast?_eq_getLast : ∀ l h, @getLast? α l = some (getLast l h)
   | [], h => nomatch h rfl
   | _::_, _ => rfl
 
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast?_singleton`
+@[simp]
+theorem getLast?_singleton (a : α) :
+    getLast? [a] = a := rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast?_cons_cons`
+@[simp]
+theorem getLast?_cons_cons (a b : α) (l : List α) :
+    getLast? (a :: b :: l) = getLast? (b :: l) := rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast?_isNone`
+@[simp]
+theorem getLast?_isNone : ∀ {l : List α}, (getLast? l).isNone ↔ l = []
+  | [] => by simp
+  | [a] => by simp
+  | a :: b :: l => by simp [getLast?_isNone (l := b :: l)]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast?_isSome`
+@[simp]
+theorem getLast?_isSome : ∀ {l : List α}, l.getLast?.isSome ↔ l ≠ []
+  | [] => by simp
+  | [a] => by simp
+  | a :: b :: l => by simp [getLast?_isSome (l := b :: l)]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.mem_getLast?_eq_getLast`
+theorem mem_getLast?_eq_getLast : ∀ {l : List α} {x : α}, x ∈ l.getLast? → ∃ h, x = getLast l h
+  | [], x, hx => False.elim <| by simp at hx
+  | [a], x, hx =>
+    have : a = x := by simpa using hx
+    this ▸ ⟨cons_ne_nil a [], rfl⟩
+  | a :: b :: l, x, hx => by
+    rw [getLast?_cons_cons] at hx
+    rcases mem_getLast?_eq_getLast hx with ⟨_, h₂⟩
+    refine ⟨cons_ne_nil _ _, ?_⟩
+    assumption
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast?_eq_getLast_of_ne_nil`
+theorem getLast?_eq_getLast_of_ne_nil : ∀ {l : List α} (h : l ≠ []), l.getLast? = some (l.getLast h)
+  | [], h => (h rfl).elim
+  | [_], _ => rfl
+  | _ :: b :: l, _ => getLast?_eq_getLast_of_ne_nil (l := b :: l) (cons_ne_nil _ _)
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.mem_getLast?_cons`
+theorem mem_getLast?_cons {x y : α} : ∀ {l : List α}, x ∈ l.getLast? → x ∈ (y :: l).getLast?
+  | [], _ => by contradiction
+  | _ :: _, h => h
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.mem_of_mem_getLast?`
+theorem mem_of_mem_getLast? {l : List α} {a : α} (ha : a ∈ l.getLast?) : a ∈ l :=
+  let ⟨_, h₂⟩ := mem_getLast?_eq_getLast ha
+  h₂.symm ▸ getLast_mem _
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast?_apppend_cons`
+@[simp]
+theorem getLast?_append_cons :
+    ∀ (l₁ : List α) (a : α) (l₂ : List α), getLast? (l₁ ++ a :: l₂) = getLast? (a :: l₂)
+  | [], a, l₂ => rfl
+  | [b], a, l₂ => rfl
+  | b :: c :: l₁, a, l₂ => by
+    rw [cons_append, cons_append, getLast?_cons_cons, ←cons_append, getLast?_append_cons (c::l₁)]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast?_append_of_ne_nil`
+theorem getLast?_append_of_ne_nil (l₁ : List α) :
+    ∀ {l₂ : List α} (_ : l₂ ≠ []), getLast? (l₁ ++ l₂) = getLast? l₂
+  | [], hl₂ => by contradiction
+  | b :: l₂, _ => getLast?_append_cons l₁ b l₂
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast?_append`
+theorem getLast?_append {l₁ l₂ : List α} {x : α} (h : x ∈ l₂.getLast?) :
+    x ∈ (l₁ ++ l₂).getLast? := by
+  cases l₂
+  · contradiction
+  · rw [List.getLast?_append_cons]
+    exact h
+
 /-! ### dropLast -/
 
 @[simp] theorem dropLast_nil : @dropLast α [] = [] := rfl
@@ -560,6 +858,156 @@ theorem getLast?_eq_getLast : ∀ l h, @getLast? α l = some (getLast l h)
   induction l₁ <;> simp [*]
 
 @[simp 1100] theorem dropLast_concat : dropLast (l₁ ++ [b]) = l₁ := by simp
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.dropLast_cons_cons`
+theorem dropLast_cons_cons (a b : α) (l : List α) : dropLast (a::b::l) = a::dropLast (b::l) := rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.dropLast_append_getLast`
+theorem dropLast_append_getLast : ∀ {l : List α} (h : l ≠ []), dropLast l ++ [getLast l h] = l
+  | [], h => absurd rfl h
+  | [a], h => rfl
+  | a :: b :: l, h => by
+    rw [dropLast_cons_cons, cons_append, getLast_cons (cons_ne_nil _ _)]
+    congr
+    exact dropLast_append_getLast (cons_ne_nil b l)
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.dropLast_append_getLast?`
+theorem dropLast_append_getLast? : ∀ {l : List α}, ∀ a ∈ l.getLast?, dropLast l ++ [a] = l
+  | [], a, ha => (Option.not_mem_none a ha).elim
+  | [a], _, rfl => rfl
+  | a :: b :: l, c, hc => by
+    rw [getLast?_cons_cons] at hc
+    rw [dropLast_cons_cons, cons_append, dropLast_append_getLast? _ hc]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.length_dropLast`
+@[simp]
+theorem length_dropLast : ∀ l : List α, length l.dropLast = length l - 1
+  | [] | [_] => rfl
+  | _::b::l => by
+    simp only [dropLast, length_cons, length_cons, length_dropLast (b::l), succ_sub_one,
+      length_cons, succ_sub_one]
+
+/-! ### Induction from the right -/
+
+/-- Induction principle from the right for lists: if a property holds for the empty list, and
+for `l ++ [a]` if it holds for `l`, then it holds for all lists. The principle is given for
+a `Sort`-valued predicate, i.e., it can also be used to construct data. -/
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.reverseRecOn`
+@[elab_as_elim]
+def reverseRecOn {C : List α → Sort _} (l : List α) (H0 : C [])
+    (H1 : ∀ (l : List α) (a : α), C l → C (l ++ [a])) : C l := by
+  rw [← reverse_reverse l]
+  match h:(reverse l) with
+  | [] => exact H0
+  | head :: tail =>
+    have : tail.length < l.length := by
+      rw [← length_reverse l, h, length_cons]
+      simp [Nat.lt_succ]
+    let ih := reverseRecOn (reverse tail) H0 H1
+    rw [reverse_cons]
+    exact H1 _ _ ih
+termination_by _ _ l _ _ => l.length
+
+/-- Bidirectional induction principle for lists: if a property holds for the empty list, the
+singleton list, and `a :: (l ++ [b])` from `l`, then it holds for all lists. This can be used to
+prove statements about palindromes. The principle is given for a `Sort`-valued predicate, i.e., it
+can also be used to construct data. -/
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.bidirectionalRec`
+def bidirectionalRec {C : List α → Sort _} (H0 : C []) (H1 : ∀ a : α, C [a])
+    (Hn : ∀ (a : α) (l : List α) (b : α), C l → C (a :: (l ++ [b]))) : ∀ l, C l
+  | [] => H0
+  | [a] => H1 a
+  | a :: b :: l => by
+    let l' := dropLast (b :: l)
+    let b' := getLast (b :: l) (cons_ne_nil _ _)
+    rw [← dropLast_append_getLast (cons_ne_nil b l)]
+    have : C l' := bidirectionalRec H0 H1 Hn l'
+    exact Hn a l' b' this
+termination_by' measure List.length
+
+/-- Like `bidirectionalRec`, but with the list parameter placed first. -/
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.bidirectionalRecOn`
+@[elab_as_elim]
+def bidirectionalRecOn {C : List α → Sort _} (l : List α) (H0 : C []) (H1 : ∀ a : α, C [a])
+    (Hn : ∀ (a : α) (l : List α) (b : α), C l → C (a :: (l ++ [b]))) : C l :=
+  bidirectionalRec H0 H1 Hn l
+
+/-! ### indexOf -/
+
+section IndexOf
+
+variable [DecidableEq α]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.indexOf_nil`
+-- Porting note: simp can prove this
+-- @[simp]
+theorem indexOf_nil (a : α) : indexOf a [] = 0 :=
+  rfl
+
+/-
+  Porting note: The following proofs were simpler prior to the port. These proofs use the low-level
+  `findIdx.go`.
+  * `indexOf_cons_self`
+  * `indexOf_cons_eq`
+  * `indexOf_cons_ne`
+  * `indexOf_cons`
+
+  The ported versions of the earlier proofs are given in comments.
+-/
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.findIdx_nil`
+-- Porting note: these lemmas recover the Lean 3 definition of `findIdx`
+@[simp] theorem findIdx_nil {α : Type _} (p : α → Bool) :
+  [].findIdx p = 0 := rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.findIdx_cons`
+theorem findIdx_cons (p : α → Bool) (b : α) (l : List α) :
+    (b :: l).findIdx p = bif p b then 0 else (l.findIdx p) + 1 := by
+    cases H : p b with
+      | true => simp [H, findIdx, findIdx.go]
+      | false => simp [H, findIdx, findIdx.go, findIdx_go_succ]
+  where
+    findIdx_go_succ (p : α → Bool) (l : List α) (n : Nat) :
+        List.findIdx.go p l (n + 1) = (List.findIdx.go p l n) + 1 := by
+      cases l with
+      | nil => unfold List.findIdx.go; exact Nat.succ_eq_add_one n
+      | cons head tail =>
+        unfold List.findIdx.go
+        cases p head <;> simp only [cond_false, cond_true]
+        exact findIdx_go_succ p tail (n + 1)
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.indexOf_cons_self`
+-- indexOf_cons_eq _ rfl
+@[simp]
+theorem indexOf_cons_self (a : α) (l : List α) : indexOf a (a :: l) = 0 := by
+  rw [indexOf, findIdx_cons, beq_self_eq_true, cond]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.indexOf_cons_eq`
+-- fun e => if_pos e
+theorem indexOf_cons_eq {a b : α} (l : List α) : a = b → indexOf a (b :: l) = 0
+  | e => by rw [e]; exact indexOf_cons_self b l
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.indexOf_cons_ne`
+-- fun n => if_neg n
+@[simp]
+theorem indexOf_cons_ne {a b : α} (l : List α) : a ≠ b → indexOf a (b :: l) = succ (indexOf a l)
+  | h => by
+    simp only [indexOf, findIdx_cons, h, ite_false]
+    cases h_beq : a == b <;> simp
+    exact h $ beq_iff_eq a b |>.mp h_beq
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.indexOf_cons`
+theorem indexOf_cons (a b : α) (l : List α) :
+    indexOf a (b :: l) = if a = b then 0 else succ (indexOf a l) := by
+  simp only [indexOf, findIdx_cons]
+  if h_eq : a = b then
+    simp [h_eq]
+  else
+    simp only [h_eq]
+    cases h_beq : a == b <;> simp
+    apply h_eq $ beq_iff_eq a b |>.mp h_beq
+
+end IndexOf
 
 /-! ### nth element -/
 
@@ -782,6 +1230,16 @@ theorem map_eq_append_split {f : α → β} {l : List α} {s₁ s₂ : List β}
   rw [← length_map l f, h, length_append]
   apply Nat.le_add_right
 
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.get?_length`
+@[simp]
+theorem get?_length (l : List α) : l.get? l.length = none :=
+  get?_len_le (Nat.le_refl _)
+
+/-- A version of `get_map` that can be used for rewriting. -/
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.get_map_rev`
+theorem get_map_rev (f : α → β) {l n} :
+    f (get l n) = get (map f l) ⟨n.1, (l.length_map f).symm ▸ n.2⟩ := Eq.symm (get_map _)
+
 /-! ### modify nth -/
 
 theorem modifyNthTail_id : ∀ n (l : List α), l.modifyNthTail id n = l
@@ -953,6 +1411,26 @@ theorem contains_eq_any_beq [BEq α] (l : List α) (a : α) : l.contains a = l.a
   | a :: _, _ => by simp [mem_reverseAux]; rw [← or_assoc, @or_comm (x = a)]
 
 @[simp] theorem mem_reverse (x : α) (as : List α) : x ∈ reverse as ↔ x ∈ as := by simp [reverse]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.reverse_cons'`
+theorem reverse_cons' (a : α) (l : List α) : reverse (a :: l) = concat (reverse l) a := by
+  simp only [reverse_cons, concat_eq_append]
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.reverse_singleton`
+-- Porting note: simp can prove this
+-- @[simp]
+theorem reverse_singleton (a : α) : reverse [a] = [a] :=
+  rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.map_reverseAux`
+theorem map_reverseAux (f : α → β) (l₁ l₂ : List α) :
+    map f (reverseAux l₁ l₂) = reverseAux (map f l₁) (map f l₂) := by
+  simp only [reverseAux_eq, map_append, reverse_map]
+
+/-! ### empty -/
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.isEmpty_iff_eq_nil`
+theorem isEmpty_iff_eq_nil {l : List α} : l.isEmpty ↔ l = [] := by cases l <;> simp only [isEmpty]
 
 /-! ### insert -/
 
