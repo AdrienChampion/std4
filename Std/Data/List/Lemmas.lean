@@ -641,21 +641,6 @@ theorem eq_nil_of_sublist_nil {l : List α} (s : l <+ []) : l = [] :=
 theorem Sublist.antisymm (s₁ : l₁ <+ l₂) (s₂ : l₂ <+ l₁) : l₁ = l₂ :=
   s₁.eq_of_length_le s₂.length_le
 
--- MATHLIB MIGRATION `Mathlib.Data.List.Basic.decidableSublist`
-instance decidableSublist [DecidableEq α] : ∀ l₁ l₂ : List α, Decidable (l₁ <+ l₂)
-  | [], _ => isTrue <| nil_sublist _
-  | _ :: _, [] => isFalse fun h => List.noConfusion <| eq_nil_of_sublist_nil h
-  | a :: l₁, b :: l₂ =>
-    if h : a = b then
-      @decidable_of_decidable_of_iff _ _ (decidableSublist l₁ l₂) <|
-        h ▸ ⟨Sublist.cons_cons _, sublist_of_cons_sublist_cons⟩
-    else
-      @decidable_of_decidable_of_iff _ _ (decidableSublist (a :: l₁) l₂)
-        ⟨sublist_cons_of_sublist _, fun s =>
-          match a, l₁, s, h with
-          | _, _, Sublist.cons _ s', h => s'
-          | _, _, Sublist.cons₂ t _, h => absurd rfl h⟩
-
 /-! ### head(?!) -/
 
 theorem head!_of_head? [Inhabited α] : ∀ {l : List α}, head? l = some a → head! l = a
@@ -1009,6 +994,20 @@ theorem indexOf_cons (a b : α) (l : List α) :
 
 end IndexOf
 
+/-! ### tail -/
+
+@[simp] theorem length_tail (l : List α) : length (tail l) = length l - 1 := by cases l <;> rfl
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.nthLe_tail`
+@[simp] theorem get_tail (l : List α) (i) (h : i < l.tail.length) :
+    let h' : i + 1 < l.length :=
+      Nat.add_lt_of_lt_sub (l.length_tail ▸ h)
+    l.tail.get ⟨i, h⟩ = l.get ⟨i + 1, h'⟩ := by
+  -- Porting note: cases l <;> [cases h; rfl] fails
+  cases l
+  · cases h
+  · rfl
+
 /-! ### nth element -/
 
 @[simp] theorem get_cons_zero {as : List α} : (a :: as).get ⟨0, Nat.zero_lt_succ _⟩ = a := rfl
@@ -1016,6 +1015,23 @@ end IndexOf
 @[simp] theorem get_cons_succ {as : List α} {h : i + 1 < (a :: as).length} :
   (a :: as).get ⟨i+1, h⟩ = as.get ⟨i, Nat.lt_of_succ_lt_succ h⟩ := rfl
 
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.nthLe_cons_aux`
+theorem appropriate_name {n ub} (hn : n ≠ 0) (h : n < ub + 1) :
+    n - 1 < ub :=
+  Nat.sub_lt_left_of_lt_add (Nat.pos_of_ne_zero hn) (Nat.add_comm ub 1 ▸ h)
+
+-- -- MATHLIB MIGRATION `Mathlib.Data.List.Basic.nthLe_cons_aux`
+-- theorem get_cons_aux {l : List α} {a : α} {n} (hn : n ≠ 0) (h : n < (a :: l).length) :
+--     n - 1 < l.length :=
+--   Nat.sub_lt_left_of_lt_add (Nat.pos_of_ne_zero hn) (
+--     by simp_arith only [length_cons] at * ; exact h
+--   )
+
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.nthLe_cons_aux`
+theorem get_cons {l : List α} {a : α} {n} (hl : n < (a::l).length) :
+    (a :: l)[n] = if hn : n = 0 then a else l.get ⟨n - 1, appropriate_name hn hl⟩ := by
+  cases n <;> rfl
+#exit
 theorem get_of_mem : ∀ {a} {l : List α}, a ∈ l → ∃ n, get l n = a
   | _, _ :: _, .head .. => ⟨⟨0, Nat.succ_pos _⟩, rfl⟩
   | _, _ :: _, .tail _ m => let ⟨⟨n, h⟩, e⟩ := get_of_mem m; ⟨⟨n+1, Nat.succ_lt_succ h⟩, e⟩
@@ -1387,10 +1403,6 @@ theorem length_removeNth : ∀ {l i}, i < length l → length (@removeNth α l i
     have : i < length xs := Nat.lt_of_succ_lt_succ h
     simp [removeNth, ← Nat.add_one]
     rw [length_removeNth this, Nat.sub_add_cancel (Nat.lt_of_le_of_lt (Nat.zero_le _) this)]
-
-/-! ### tail -/
-
-@[simp] theorem length_tail (l : List α) : length (tail l) = length l - 1 := by cases l <;> rfl
 
 /-! ### all / any -/
 
