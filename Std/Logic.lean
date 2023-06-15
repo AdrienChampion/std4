@@ -770,3 +770,7 @@ theorem Bool.eq_false_iff {b : Bool} : b = false ↔ b ≠ true :=
 theorem Bool.eq_iff_iff {a b : Bool} : a = b ↔ (a ↔ b) := by cases b <;> simp
 
 theorem ne_comm {α} {a b : α} : a ≠ b ↔ b ≠ a := ⟨Ne.symm, Ne.symm⟩
+
+-- MATHLIB MIGRATION `Mathlib.Data.Bool.Basic.cond_eq_ite`
+theorem Bool.cond_eq_ite {α} (b : Bool) (t e : α) : cond b t e = if b then t else e := by
+  cases b <;> simp

@@ -411,7 +411,7 @@ theorem bind_singleton (f : α → List β) (x : α) : [x].bind f = f x :=
 
 -- MATHLIB MIGRATION `Mathlib.Data.List.Basic.map_eq_bind`
 theorem map_eq_bind {α β} (f : α → β) (l : List α) : map f l = l.bind fun x => [f x] := by
-  simp only [←map_singleton]
+  simp only [← map_singleton]
   rw [← bind_singleton' l, bind_map, bind_singleton']
 
 -- MATHLIB MIGRATION `Mathlib.Data.List.Basic.bind_assoc`
@@ -976,21 +976,12 @@ theorem indexOf_cons_eq {a b : α} (l : List α) : a = b → indexOf a (b :: l) 
 -- fun n => if_neg n
 @[simp]
 theorem indexOf_cons_ne {a b : α} (l : List α) : a ≠ b → indexOf a (b :: l) = succ (indexOf a l)
-  | h => by
-    simp only [indexOf, findIdx_cons, h, ite_false]
-    cases h_beq : a == b <;> simp
-    exact h $ beq_iff_eq a b |>.mp h_beq
+  | h => by simp only [indexOf, findIdx_cons, Bool.cond_eq_ite, beq_iff_eq, h, ite_false]
 
 -- MATHLIB MIGRATION `Mathlib.Data.List.Basic.indexOf_cons`
 theorem indexOf_cons (a b : α) (l : List α) :
     indexOf a (b :: l) = if a = b then 0 else succ (indexOf a l) := by
-  simp only [indexOf, findIdx_cons]
-  if h_eq : a = b then
-    simp [h_eq]
-  else
-    simp only [h_eq]
-    cases h_beq : a == b <;> simp
-    apply h_eq $ beq_iff_eq a b |>.mp h_beq
+  simp only [indexOf, findIdx_cons, Bool.cond_eq_ite, beq_iff_eq]
 
 end IndexOf
 
