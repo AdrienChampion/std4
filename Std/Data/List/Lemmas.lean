@@ -48,12 +48,12 @@ theorem exists_mem_of_length_pos : ∀ {l : List α}, 0 < length l → ∃ a, a 
 theorem length_pos_iff_exists_mem {l : List α} : 0 < length l ↔ ∃ a, a ∈ l :=
   ⟨exists_mem_of_length_pos, fun ⟨_, h⟩ => length_pos_of_mem h⟩
 
--- MATHLIB MIGRATION original lemma based on `Mathlib.Data.List.Basic.exists_of_length_succ`
+-- MATHLIB MIGRATION original theorem based on `Mathlib.Data.List.Basic.exists_of_length_succ`
 theorem exists_cons_of_length_pos :
     ∀ {l : List α}, 0 < l.length → ∃ h t, l = h :: t
   | h::t, _ => ⟨h, t, rfl⟩
 
--- MATHLIB MIGRATION original lemma based on `Mathlib.Data.List.Basic.exists_of_length_succ`
+-- MATHLIB MIGRATION original theorem based on `Mathlib.Data.List.Basic.exists_of_length_succ`
 theorem length_pos_iff_exists_cons :
     ∀ {l : List α}, 0 < l.length ↔ ∃ h t, l = h :: t :=
   ⟨exists_cons_of_length_pos, fun ⟨_, _, eq⟩ => eq ▸ Nat.succ_pos _⟩
@@ -675,7 +675,7 @@ theorem head?_append {s t : List α} {x : α} (h : x ∈ s.head?) : x ∈ (s ++ 
 
 -- MATHLIB MIGRATION `Mathlib.Data.List.Basic.head?_append_of_ne_nil`
 theorem head?_append_of_ne_nil :
-    ∀ (l₁ : List α) {l₂ : List α} (_ : l₁ ≠ []), head? (l₁ ++ l₂) = head? l₁
+    ∀ (l₁ : List α) {l₂ : List α}, l₁ ≠ [] → head? (l₁ ++ l₂) = head? l₁
   | _ :: _, _, _ => rfl
 
 -- MATHLIB MIGRATION `Mathlib.Data.List.Basic.cons_head?_tail`
@@ -812,26 +812,20 @@ theorem mem_of_mem_getLast? {l : List α} {a : α} (ha : a ∈ l.getLast?) : a �
 
 -- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast?_apppend_cons`
 @[simp]
-theorem getLast?_append_cons :
-    ∀ (l₁ : List α) (a : α) (l₂ : List α), getLast? (l₁ ++ a :: l₂) = getLast? (a :: l₂)
-  | [], a, l₂ => rfl
-  | [b], a, l₂ => rfl
-  | b :: c :: l₁, a, l₂ => by
-    rw [cons_append, cons_append, getLast?_cons_cons, ←cons_append, getLast?_append_cons (c::l₁)]
+theorem getLast?_append_cons (l₁ : List α) (a : α) (l₂ : List α) :
+    getLast? (l₁ ++ a :: l₂) = getLast? (a :: l₂) := by
+  rw [getLast?_eq_getLast, getLast?_eq_getLast, getLast_append'] <;> apply cons_ne_nil
 
 -- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast?_append_of_ne_nil`
 theorem getLast?_append_of_ne_nil (l₁ : List α) :
     ∀ {l₂ : List α} (_ : l₂ ≠ []), getLast? (l₁ ++ l₂) = getLast? l₂
-  | [], hl₂ => by contradiction
   | b :: l₂, _ => getLast?_append_cons l₁ b l₂
 
 -- MATHLIB MIGRATION `Mathlib.Data.List.Basic.getLast?_append`
 theorem getLast?_append {l₁ l₂ : List α} {x : α} (h : x ∈ l₂.getLast?) :
-    x ∈ (l₁ ++ l₂).getLast? := by
-  cases l₂
-  · contradiction
-  · rw [List.getLast?_append_cons]
-    exact h
+    x ∈ (l₁ ++ l₂).getLast? :=
+  match l₂ with
+  | _::_ => by simp only [List.getLast?_append_cons, h]
 
 /-! ### dropLast -/
 
@@ -1413,6 +1407,14 @@ theorem reverse_cons' (a : α) (l : List α) : reverse (a :: l) = concat (revers
 -- @[simp]
 theorem reverse_singleton (a : α) : reverse [a] = [a] :=
   rfl
+
+-- Porting note: This one was @[simp] in mathlib 3,
+-- but Std contains a competing simp lemma reverse_map.
+-- For now we remove @[simp] to avoid simplification loops.
+-- TODO: Change Std lemma to match mathlib 3?
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.map_reverse`
+theorem map_reverse (f : α → β) (l : List α) : map f (reverse l) = reverse (map f l) :=
+  (reverse_map f l).symm
 
 -- MATHLIB MIGRATION `Mathlib.Data.List.Basic.map_reverseAux`
 theorem map_reverseAux (f : α → β) (l₁ l₂ : List α) :
