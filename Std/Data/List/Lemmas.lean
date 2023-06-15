@@ -1015,23 +1015,12 @@ end IndexOf
 @[simp] theorem get_cons_succ {as : List α} {h : i + 1 < (a :: as).length} :
   (a :: as).get ⟨i+1, h⟩ = as.get ⟨i, Nat.lt_of_succ_lt_succ h⟩ := rfl
 
--- MATHLIB MIGRATION `Mathlib.Data.List.Basic.nthLe_cons_aux`
-theorem appropriate_name {n ub} (hn : n ≠ 0) (h : n < ub + 1) :
-    n - 1 < ub :=
-  Nat.sub_lt_left_of_lt_add (Nat.pos_of_ne_zero hn) (Nat.add_comm ub 1 ▸ h)
-
--- -- MATHLIB MIGRATION `Mathlib.Data.List.Basic.nthLe_cons_aux`
--- theorem get_cons_aux {l : List α} {a : α} {n} (hn : n ≠ 0) (h : n < (a :: l).length) :
---     n - 1 < l.length :=
---   Nat.sub_lt_left_of_lt_add (Nat.pos_of_ne_zero hn) (
---     by simp_arith only [length_cons] at * ; exact h
---   )
-
--- MATHLIB MIGRATION `Mathlib.Data.List.Basic.nthLe_cons_aux`
+-- MATHLIB MIGRATION `Mathlib.Data.List.Basic.nthLe_cons`
+-- - lemma `Mathlib.Data.List.Basic.nthLe_cons_aux` was generalized to `Nat.pred_lt_of_lt_succ`
 theorem get_cons {l : List α} {a : α} {n} (hl : n < (a::l).length) :
-    (a :: l)[n] = if hn : n = 0 then a else l.get ⟨n - 1, appropriate_name hn hl⟩ := by
+    (a :: l)[n] = if hn : n = 0 then a else l.get ⟨n - 1, Nat.pred_lt_of_lt_succ hn hl⟩ := by
   cases n <;> rfl
-#exit
+
 theorem get_of_mem : ∀ {a} {l : List α}, a ∈ l → ∃ n, get l n = a
   | _, _ :: _, .head .. => ⟨⟨0, Nat.succ_pos _⟩, rfl⟩
   | _, _ :: _, .tail _ m => let ⟨⟨n, h⟩, e⟩ := get_of_mem m; ⟨⟨n+1, Nat.succ_lt_succ h⟩, e⟩

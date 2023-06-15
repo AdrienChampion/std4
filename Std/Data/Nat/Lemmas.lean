@@ -467,6 +467,13 @@ protected theorem sub_lt_left_of_lt_add {n k m : Nat} (H : n ≤ k) (h : k < n +
 protected theorem add_le_of_le_sub_left {n k m : Nat} (H : m ≤ k) (h : n ≤ k - m) : m + n ≤ k :=
   Nat.not_lt.1 fun h' => Nat.not_lt.2 h (Nat.sub_lt_left_of_lt_add H h')
 
+protected theorem sub_lt_right_of_lt_add {n k m : Nat} (H : m ≤ k) (h : k < n + m)
+    : k - m < n :=
+  Nat.sub_lt_left_of_lt_add H (Nat.add_comm .. ▸ h)
+
+theorem pred_lt_of_lt_succ (hn : n ≠ 0) (h : n < m + 1) : n - 1 < m :=
+  Nat.sub_lt_right_of_lt_add (Nat.pos_of_ne_zero hn) h
+
 theorem le_sub_iff_add_le {x y k : Nat} (h : k ≤ y) : x ≤ y - k ↔ x + k ≤ y := by
   rw [← Nat.add_sub_cancel x k, Nat.sub_le_sub_right_iff h, Nat.add_sub_cancel]
 
